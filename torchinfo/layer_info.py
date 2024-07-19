@@ -87,7 +87,7 @@ class LayerInfo:
 
     @staticmethod
     def calculate_size(
-        inputs: DETECTED_INPUT_OUTPUT_TYPES | None, batch_dim: int | None
+        inputs: DETECTED_INPUT_OUTPUT_TYPES, batch_dim: int | None
     ) -> tuple[list[int], int]:
         """
         Set input_size or output_size using the model's inputs.
@@ -119,8 +119,8 @@ class LayerInfo:
             size = list(inputs.size())
             elem_bytes = inputs.element_size()
 
-        elif isinstance(inputs, np.ndarray):  # type: ignore[unreachable]
-            inputs_ = torch.from_numpy(inputs)  # type: ignore[unreachable]
+        elif isinstance(inputs, np.ndarray):
+            inputs_ = torch.from_numpy(inputs)
             size, elem_bytes = list(inputs_.size()), inputs_.element_size()
 
         elif isinstance(inputs, (list, tuple)):
@@ -203,9 +203,10 @@ class LayerInfo:
 
             # kernel_size for inner layer parameters
             ksize = list(param.size())
-            # to make [in_shape, out_shape, ksize, ksize]
-            if name == "weight" and len(ksize) > 1:
-                ksize[0], ksize[1] = ksize[1], ksize[0]
+            if name == "weight":
+                # to make [in_shape, out_shape, ksize, ksize]
+                if len(ksize) > 1:
+                    ksize[0], ksize[1] = ksize[1], ksize[0]
 
             # RNN modules have inner weights such as weight_ih_l0
             # Don't show parameters for the overall model, show for individual layers
@@ -217,9 +218,9 @@ class LayerInfo:
                 final_name = name
         # Fix the final row to display more nicely
         if self.inner_layers:
-            self.inner_layers[final_name][ColumnSettings.NUM_PARAMS] = (
-                f"└─{self.inner_layers[final_name][ColumnSettings.NUM_PARAMS][2:]}"
-            )
+            self.inner_layers[final_name][
+                ColumnSettings.NUM_PARAMS
+            ] = f"└─{self.inner_layers[final_name][ColumnSettings.NUM_PARAMS][2:]}"
 
     def calculate_macs(self) -> None:
         """
@@ -322,9 +323,8 @@ def nested_list_size(inputs: Sequence[Any] | torch.Tensor) -> tuple[list[int], i
         size, elem_bytes = nested_list_size(inputs.tensors)
     elif isinstance(inputs, torch.Tensor):
         size, elem_bytes = list(inputs.size()), inputs.element_size()
-    elif isinstance(inputs, np.ndarray):  # type: ignore[unreachable]
-        # preserves dtype
-        inputs_torch = torch.from_numpy(inputs)  # type: ignore[unreachable]
+    elif isinstance(inputs, np.ndarray):
+        inputs_torch = torch.from_numpy(inputs)  # preserves dtype
         size, elem_bytes = list(inputs_torch.size()), inputs_torch.element_size()
     elif not hasattr(inputs, "__getitem__") or not inputs:
         size, elem_bytes = [], 0
@@ -359,8 +359,8 @@ def rgetattr(module: nn.Module, attr: str) -> torch.Tensor | None:
         if not hasattr(module, attr_i):
             return None
         module = getattr(module, attr_i)
-    assert isinstance(module, torch.Tensor)  # type: ignore[unreachable]
-    return module  # type: ignore[unreachable]
+    assert isinstance(module, torch.Tensor)
+    return module
 
 
 def get_children_layers(summary_list: list[LayerInfo], index: int) -> list[LayerInfo]:

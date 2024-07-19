@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .enums import Units
 from .formatting import CONVERSION_FACTORS, FormattingOptions
+from .layer_info import LayerInfo
 
-if TYPE_CHECKING:
-    from .layer_info import LayerInfo
-
+import math
 
 class ModelStatistics:
     """Class for storing results of the summary."""
@@ -27,6 +26,9 @@ class ModelStatistics:
         self.total_params, self.trainable_params = 0, 0
         self.total_param_bytes, self.total_output_bytes = 0, 0
 
+        # Memory needed for one inference
+        self.max_memory = 0.0
+        self.memory_layer = ""
         # TODO: Figure out why the below functions using max() are ever 0
         # (they should always be non-negative), and remove the call to max().
         # Investigation: https://github.com/TylerYep/torchinfo/pull/195
@@ -41,6 +43,13 @@ class ModelStatistics:
                 self.total_params += max(layer_info.num_params, 0)
                 self.total_param_bytes += layer_info.param_bytes
                 self.trainable_params += max(layer_info.trainable_params, 0)
+
+                # Compute memory needed for one inference
+                if layer_info.input_size!= None and layer_info.output_size != None:
+                    memory_needed = math.prod(layer_info.input_size) + math.prod(layer_info.output_size)
+                    if memory_needed >= self.max_memory :
+                        self.memory_layer = str(layer_info.get_layer_name(True, True))
+                        self.max_memory = memory_needed
             else:
                 if layer_info.is_recursive:
                     continue
@@ -117,6 +126,6 @@ class ModelStatistics:
         units_used, converted_num = ModelStatistics.to_readable(num, units)
         if converted_num.is_integer():
             converted_num = int(converted_num)
-        units_display = "" if units_used == Units.NONE else f" ({units_used.value})"
+        units_display = "" if units_used == Units.NONE else f" ({units_used})"
         fmt = "d" if isinstance(converted_num, int) else ".2f"
         return f"{units_display}: {converted_num:,{fmt}}"
