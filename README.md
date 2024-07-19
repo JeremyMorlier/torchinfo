@@ -1,3 +1,7 @@
+# Fork of Torchinfo
+
+The goal of this torchinfo's fork is to provide memory needs of neural networks (mainly CNNs as Transformers are not supported in torchinfo), the memory need is determined by taking the max layer input-output of the network.
+
 # torchinfo
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
